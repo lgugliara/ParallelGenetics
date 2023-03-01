@@ -213,9 +213,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   file_name: 5
   best_score: 19913031
-  chromosomes_count: 20
-  genes_count: 10000
+  chromosomes_count: 4
+  genes_count: 16
   elite_factor: 0.1
   mutation_factor: 0.01
   isUnique: 1
-  compute: {fileID: 0}
+  compute: {fileID: 7200000, guid: 51adebc0d68e3454aa7944bbf5a847a2, type: 3}

@@ -15,8 +15,8 @@ public class Test : MonoBehaviour
 {
     public string file_name = "5";
     public int best_score = 19_913_031;
-    public int chromosomes_count = 20;
-    public int genes_count = 10000;
+    public int chromosomes_count = 4;
+    public int genes_count = 16;
     public double elite_factor = 0.1;
     public double mutation_factor = 0.01;
     public bool isUnique = true;
@@ -80,8 +80,6 @@ public class Test : MonoBehaviour
 
     void TestParallel()
     {
-        int chromosomes_count = 4;
-        int genes_count = 16;
         var KernelId = compute.FindKernel("InnerMutate");
 
         System.Random rnd = new System.Random();
@@ -97,8 +95,8 @@ public class Test : MonoBehaviour
         AllValues_Buffer.SetData(all_values);
         compute.SetBuffer(KernelId, all_values_bufferId, AllValues_Buffer);
 
-        compute.SetFloat("chromosomes_count", chromosomes_count);
-        compute.SetFloat("genes_count", genes_count);
+        compute.SetInt("chromosomes_count", chromosomes_count);
+        compute.SetInt("genes_count", genes_count);
 
         for (int r = 0; r < 16; r++)
         {

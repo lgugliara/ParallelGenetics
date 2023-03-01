@@ -20,8 +20,8 @@ RWStructuredBuffer<int> Pool;
 // todo: AllValues type is not int, in cs it is <T>
 RWStructuredBuffer<uint> AllValues;
 
-uint chromosomes_count;
-uint genes_count;
+int chromosomes_count;
+int genes_count;
 
 // Evaluation
 
@@ -66,8 +66,8 @@ void InnerMutate (uint3 id : SV_DispatchThreadID)
     uint2 ids = uint2(context._offset, context._offset) + RandomRange2(context.ThreadID, 0, genes_count);
     uint2 values = uint2(AllValues[ids.x], AllValues[ids.y]);
 
-    AllValues[context._offset + ids.x] = values.y;
-    AllValues[context._offset + ids.y] = values.x;
+    AllValues[ids.x] = values.y;
+    AllValues[ids.y] = values.x;
 }
 
 // todo: set numthreads.x as chromosome' genes count
