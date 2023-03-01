@@ -34,3 +34,7 @@ uint2 RandomRange2(uint id, uint min, uint max)
 {
     return uint2(RandomRange(id, min, max), RandomRange(id, min, max));
 }
+
+// todo
+uint RandomRangeDistinct(uint id, uint min, uint max)
+{}

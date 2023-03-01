@@ -10,8 +10,8 @@
 #pragma kernel PickValues
 #pragma kernel PickLookups
 
-#include "libs/Random.cginc"
 #include "libs/Context.cginc"
+#include "libs/Random.cginc"
 
 // Global buffers
 
@@ -50,8 +50,7 @@ void TournamentCrossover (uint3 id : SV_DispatchThreadID)
 
 // Mutation stages
 
-// todo: deprecated
-RWStructuredBuffer<int2> InnerSwaps;
+#include "utils/MutationUtils.cginc"
 
 // todo: use "max_swaps" to apply on some chromosomes only
 int max_swaps;

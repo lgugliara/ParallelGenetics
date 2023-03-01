@@ -21,9 +21,7 @@ public class Test : MonoBehaviour
     public double mutation_factor = 0.01;
     public bool isUnique = true;
 
-    public ComputeShader compute;
-
-    Thread t;
+    public ComputeShader gaCompute;
 
     Func<Chromosome<int>, double> evaluate = (Chromosome<int> chromosome) =>
     {
@@ -73,36 +71,36 @@ public class Test : MonoBehaviour
     void BestChangeEvent(object sender, EventArgs e)
     {
         FileHandler.DrawAdam(
-            @"Assets/ReplyChallenges/2022/Out/" + file_name + ".txt",
+            @"Assets/ParallelGenetics/ReplyChallenges/2022/Out/" + file_name + ".txt",
             (sender as Population<int>).Best
         );
     }
 
     void TestParallel()
     {
-        var KernelId = compute.FindKernel("InnerMutate");
+        var KernelId = gaCompute.FindKernel("InnerMutate");
 
         System.Random rnd = new System.Random();
         var all_states_bufferId = Shader.PropertyToID("AllStates");
         uint[] all_states = Enumerable.Range(0, chromosomes_count * genes_count).Select(x => (uint)rnd.Next()).ToArray();
         var AllStates_Buffer = new ComputeBuffer(chromosomes_count * genes_count, sizeof(uint));
         AllStates_Buffer.SetData(all_states);
-        compute.SetBuffer(KernelId, all_states_bufferId, AllStates_Buffer);
+        gaCompute.SetBuffer(KernelId, all_states_bufferId, AllStates_Buffer);
 
         var all_values_bufferId = Shader.PropertyToID("AllValues");
         uint[] all_values = Enumerable.Range(0, chromosomes_count * genes_count).Select(x => (uint)x).ToArray();
         var AllValues_Buffer = new ComputeBuffer(chromosomes_count * genes_count, sizeof(uint));
         AllValues_Buffer.SetData(all_values);
-        compute.SetBuffer(KernelId, all_values_bufferId, AllValues_Buffer);
+        gaCompute.SetBuffer(KernelId, all_values_bufferId, AllValues_Buffer);
 
-        compute.SetInt("chromosomes_count", chromosomes_count);
-        compute.SetInt("genes_count", genes_count);
+        gaCompute.SetInt("chromosomes_count", chromosomes_count);
+        gaCompute.SetInt("genes_count", genes_count);
 
-        for (int r = 0; r < 16; r++)
+        for (int r = 0; r < 2; r++)
         {
             UnityEngine.Debug.LogWarning("----- (Test number " + r + ") -----");
 
-            compute.Dispatch(KernelId, chromosomes_count * genes_count / 64, 1, 1);
+            gaCompute.Dispatch(KernelId, chromosomes_count * genes_count / 64, 1, 1);
 
             AllValues_Buffer.GetData(all_values);
 
@@ -116,38 +114,30 @@ public class Test : MonoBehaviour
         }
 
         AllValues_Buffer.Dispose();
+        AllStates_Buffer.Dispose();
         UnityEngine.Debug.LogWarning("----- (Test ends) -----");
     }
 
     void Start()
     {
-        TestParallel();
-
-        FileHandler.ImportInputData(@"Assets/ReplyChallenges/2022/In/" + file_name + ".txt");
-
+        //TestParallel();
+        FileHandler.ImportInputData(@"Assets/ParallelGenetics/ReplyChallenges/2022/In/" + file_name + ".txt");
         var values = GameParameter.Demons.Select(x => x.Id).ToList();
+        //FileHandler.ImportAdamData(@"Assets/ParallelGenetics/ReplyChallenges/2022/Out/" + file_name + ".txt", adam);
 
-        //FileHandler.ImportAdamData(@"Assets/ReplyChallenges/2022/Out/" + file_name + ".txt", adam);
+        var ga = new GeneticAlgorithm<int>(
+            chromosomes_count: chromosomes_count,
+            genes_count: genes_count,
+            values: values,
+            evaluate: evaluate,
+            comparer: best_score,
+            elite_factor: elite_factor,
+            mutation_factor: mutation_factor,
+            isUnique: isUnique,
+            on_best_change: BestChangeEvent,
+            gaCompute: gaCompute
+        );
 
-        //var ga = new GeneticAlgorithm<int>(
-        //    chromosomes_count: chromosomes_count,
-        //    genes_count: genes_count,
-        //    values: values,
-        //    evaluate: evaluate,
-        //    comparer: best_score,
-        //    elite_factor: elite_factor,
-        //    mutation_factor: mutation_factor,
-        //    isUnique: isUnique,
-        //    on_best_change: BestChangeEvent,
-        //    compute: compute
-        //);
-
-        //t = new Thread(() => ga.Start());
-        //t.Start();
-    }
-
-    void OnApplicationQuit()
-    {
-        t.Abort();
+        ga.Run();
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace GeneticTspSolver
 {
@@ -22,8 +23,10 @@ namespace GeneticTspSolver
             List<T> values,
             Func<Chromosome<T>, double> evaluate,
             double comparer,
+            double elite_factor,
             double mutation_factor,
             bool isUnique,
+            ComputeShader gaCompute,
             EventHandler on_ran = null,
             EventHandler on_best_change = null,
             EventHandler on_terminate = null
@@ -33,8 +36,8 @@ namespace GeneticTspSolver
 
             genes_count = Math.Min(genes_count, values.Count);
 
-            Crossover<T>.Initialize();
-            Mutation<T>.Initialize(Math.Max(1, (int)(Math.Min(1, mutation_factor) * genes_count)));
+            Crossover<T>.Initialize(elite_factor);
+            Mutation<T>.Initialize(mutation_factor);
             Fitness<T>.Initialize(evaluate, comparer);
             Picker<T>.Initialize();
 
@@ -61,26 +64,28 @@ namespace GeneticTspSolver
             UnityEngine.Debug.LogError("First population created in " + Stopwatch.Elapsed);
         }
 
-        public async Task Start() => Run();
-
-        public void Run()
+        public async void Run()
         {
-            for(int generation = 0; !ITermination<T>.IsTerminated(this); generation++)
+            for (int generation = 0; !ITermination<T>.IsTerminated(this); generation++)
             {
-                if(generation % 1 == 0)
-                    UnityEngine.Debug.LogWarning("(GEN) " + generation + "\t\t(BEST FITNESS) " + Population.Best.Fitness.Value);
-
-                // TODO
-                //Population.PerformCrossover();
-                Population.PerformMutate();
-
-                if(Population.PerformEvaluate(OnBestChange))
-                    Population.PerformPick();
-
+                await Task.Run(() => RunGen(generation));
                 OnRan?.Invoke(this, EventArgs.Empty);
             }
 
             OnTerminate?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void RunGen(int generation)
+        {
+            if (generation % 1 == 0)
+                UnityEngine.Debug.LogWarning("(GEN) " + generation + "\t\t(BEST FITNESS) " + Population.Best.Fitness.Value);
+
+            // TODO
+            //Population.PerformCrossover();
+            Population.PerformMutate();
+
+            if (Population.PerformEvaluate(OnBestChange))
+                Population.PerformPick();
         }
     }
 }
