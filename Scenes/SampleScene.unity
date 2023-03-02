@@ -216,6 +216,6 @@ MonoBehaviour:
   chromosomes_count: 200
   genes_count: 1000
   elite_factor: 0.1
-  mutation_factor: 0.01
+  mutation_factor: 0.005
   isUnique: 1
   gaCompute: {fileID: 7200000, guid: 51adebc0d68e3454aa7944bbf5a847a2, type: 3}

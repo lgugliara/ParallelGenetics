@@ -8,6 +8,7 @@ using GeneticTspSolver;
 using ReplyChallenge2022;
 using Unity.Mathematics;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 // ensure class initializer is called whenever scripts recompile
 [InitializeOnLoadAttribute]
@@ -22,6 +23,8 @@ public class Test : MonoBehaviour
     public bool isUnique = true;
 
     public ComputeShader gaCompute;
+
+    private Thread t;
 
     Func<Chromosome<int>, double> evaluate = (Chromosome<int> chromosome) =>
     {
@@ -78,9 +81,9 @@ public class Test : MonoBehaviour
 
     void TestParallel()
     {
-        var KernelId = gaCompute.FindKernel("InnerMutate");
-
+        var KernelId = gaCompute.FindKernel("Mutate");
         System.Random rnd = new System.Random();
+
         var all_states_bufferId = Shader.PropertyToID("AllStates");
         uint[] all_states = Enumerable.Range(0, chromosomes_count * genes_count).Select(x => (uint)rnd.Next()).ToArray();
         var AllStates_Buffer = new ComputeBuffer(chromosomes_count * genes_count, sizeof(uint));
@@ -93,34 +96,62 @@ public class Test : MonoBehaviour
         AllValues_Buffer.SetData(all_values);
         gaCompute.SetBuffer(KernelId, all_values_bufferId, AllValues_Buffer);
 
+        UnityEngine.Debug.Log(string.Join(";", all_values));
+
         gaCompute.SetInt("chromosomes_count", chromosomes_count);
         gaCompute.SetInt("genes_count", genes_count);
 
-        for (int r = 0; r < 2; r++)
-        {
-            UnityEngine.Debug.LogWarning("----- (Test number " + r + ") -----");
+        var all_insertions_bufferId = Shader.PropertyToID("Mutation_Insertions");
+        uint2[] all_insertions = Enumerable.Range(0, chromosomes_count).Select(x => new uint2((uint)(x * rnd.Next(0, genes_count)), (uint)rnd.Next(0, genes_count))).ToArray();
+        var AllInsertions_Buffer = new ComputeBuffer(chromosomes_count, sizeof(uint) * 2);
+        AllInsertions_Buffer.SetData(all_insertions);
+        gaCompute.SetBuffer(KernelId, all_insertions_bufferId, AllInsertions_Buffer);
 
-            gaCompute.Dispatch(KernelId, chromosomes_count * genes_count / 64, 1, 1);
+        var all_remotions_bufferId = Shader.PropertyToID("Mutation_Remotions");
+        uint2[] all_remotions = Enumerable.Range(0, chromosomes_count).Select(x=> new uint2((uint)(x * rnd.Next(0, genes_count)), (uint)rnd.Next(0, genes_count))).ToArray();
+        var AllRemotions_Buffer = new ComputeBuffer(chromosomes_count, sizeof(uint) * 2);
+        AllRemotions_Buffer.SetData(all_remotions);
+        gaCompute.SetBuffer(KernelId, all_remotions_bufferId, AllRemotions_Buffer);
 
-            AllValues_Buffer.GetData(all_values);
+        gaCompute.Dispatch(KernelId, chromosomes_count * genes_count / 64, 1, 1);
 
-            for (int i = 0; i < chromosomes_count; i++)
-                UnityEngine.Debug.Log(string.Join(";", all_values.Skip(i * genes_count).Take(genes_count)));
+        AllValues_Buffer.GetData(all_values);
 
-            //for (int i = 0; i <= all_values.Max(); i++)
-            //    UnityEngine.Debug.Log(i + ": " + all_values.Where(x => x == i).Count() + "\t/\t" + all_values.Length);
+        for (int i = 0; i < chromosomes_count; i++)
+            UnityEngine.Debug.Log(string.Join(";", all_values.Skip(i * genes_count).Take(genes_count)));
 
-            UnityEngine.Debug.Log("Distinct values: " + all_values.Distinct().Count() + " | Total values: " + all_values.Length);
-        }
+        //for (int i = 0; i <= all_values.Max(); i++)
+        //    UnityEngine.Debug.Log(i + ": " + all_values.Where(x => x == i).Count() + "\t/\t" + all_values.Length);
+
+        UnityEngine.Debug.Log("Distinct values: " + all_values.Distinct().Count() + " | Total values: " + all_values.Length);
+
+        //for (int r = 0; r < chromosomes_count; r++)
+        //{
+        //    UnityEngine.Debug.LogWarning("----- (Test number " + r + ") -----");
+
+        //    AllValues_Buffer.GetData(all_values);
+
+        //    for (int i = 0; i < chromosomes_count; i++)
+        //        UnityEngine.Debug.Log(string.Join(";", all_values.Skip(i * genes_count).Take(genes_count)));
+
+        //    //for (int i = 0; i <= all_values.Max(); i++)
+        //    //    UnityEngine.Debug.Log(i + ": " + all_values.Where(x => x == i).Count() + "\t/\t" + all_values.Length);
+
+        //    UnityEngine.Debug.Log("Distinct values: " + all_values.Distinct().Count() + " | Total values: " + all_values.Length);
+        //}
 
         AllValues_Buffer.Dispose();
         AllStates_Buffer.Dispose();
+        AllInsertions_Buffer.Dispose();
+        AllRemotions_Buffer.Dispose();
         UnityEngine.Debug.LogWarning("----- (Test ends) -----");
     }
 
     void Start()
     {
         //TestParallel();
+        //return;
+
         FileHandler.ImportInputData(@"Assets/ParallelGenetics/ReplyChallenges/2022/In/" + file_name + ".txt");
         var values = GameParameter.Demons.Select(x => x.Id).ToList();
         //FileHandler.ImportAdamData(@"Assets/ParallelGenetics/ReplyChallenges/2022/Out/" + file_name + ".txt", adam);
@@ -138,6 +169,13 @@ public class Test : MonoBehaviour
             gaCompute: gaCompute
         );
 
-        ga.Run();
+        t = new Thread(() => ga.Run());
+        t.Start();
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (t != null)
+            t.Abort();
     }
 }

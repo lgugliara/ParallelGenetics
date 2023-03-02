@@ -1,6 +1,11 @@
+#ifndef RANDOM_LIBS
+#define RANDOM_LIBS
+
 #include "UnityShaderVariables.cginc"
 
-RWStructuredBuffer<uint> AllStates;
+#include "../utils/_BufferUtils.cginc"
+
+#include "./Context.cginc"
 
 uint xorshift(uint s)
 {
@@ -13,28 +18,30 @@ uint xorshift(uint s)
     return s;
 }
 
-uint NextThreadState(uint id)
+uint NextThreadState(Context context)
 {
-    uint next = xorshift(AllStates[id]);
-    AllStates[id] = next;
+    uint next = xorshift(AllStates[context.ThreadID]);
+    AllStates[context.ThreadID] = next;
     return next;
 }
 
-uint Random(uint id)
+uint Random(Context context)
 {
-    return NextThreadState(id);
+    return NextThreadState(context);
 }
 
-uint RandomRange(uint id, uint min, uint max)
+uint RandomRange(Context context, uint min, uint max)
 {
-	return (Random(id) % (max - min)) - min;
+	return (Random(context) % (max - min)) - min;
 }
 
-uint2 RandomRange2(uint id, uint min, uint max)
+uint2 RandomRange2(Context context, uint min, uint max)
 {
-    return uint2(RandomRange(id, min, max), RandomRange(id, min, max));
+    return uint2(RandomRange(context, min, max), RandomRange(context, min, max));
 }
 
 // todo
-uint RandomRangeDistinct(uint id, uint min, uint max)
-{}
+/* uint RandomRangeDistinct(uint id, uint min, uint max)
+{} */
+
+#endif

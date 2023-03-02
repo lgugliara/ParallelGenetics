@@ -1,32 +1,27 @@
+#define GROUP_SIZE 64
+
 // Evaluation
 #pragma kernel Evaluate
 // Crossover stages
 #pragma kernel EliteCrossover
 #pragma kernel TournamentCrossover
 // Mutation stages
-#pragma kernel InnerMutate
-#pragma kernel OuterMutate
+#pragma kernel Mutate
 // Picking stages
 #pragma kernel PickValues
 #pragma kernel PickLookups
 
+#include "utils/_BufferUtils.cginc"
+#include "utils/_VariableUtils.cginc"
+
 #include "libs/Context.cginc"
 #include "libs/Random.cginc"
-
-// Global buffers
-
-// todo: Pool type is not int, in cs it is <T>
-RWStructuredBuffer<int> Pool;
-// todo: AllValues type is not int, in cs it is <T>
-RWStructuredBuffer<uint> AllValues;
-
-int chromosomes_count;
-int genes_count;
+#include "libs/Arrays.cginc"
 
 // Evaluation
 
 // todo: set numthreads.x as chromosome' genes count
-[numthreads(1024,1,1)]
+[numthreads(GROUP_SIZE,1,1)]
 void Evaluate (uint3 id : SV_DispatchThreadID)
 {
 
@@ -35,14 +30,14 @@ void Evaluate (uint3 id : SV_DispatchThreadID)
 // Crossover stages
 
 // todo: set numthreads.x as chromosome' genes count
-[numthreads(1024,1,1)]
+[numthreads(GROUP_SIZE,1,1)]
 void EliteCrossover (uint3 id : SV_DispatchThreadID)
 {
 
 }
 
 // todo: set numthreads.x as chromosome' genes count
-[numthreads(1024,1,1)]
+[numthreads(GROUP_SIZE,1,1)]
 void TournamentCrossover (uint3 id : SV_DispatchThreadID)
 {
 
@@ -52,41 +47,28 @@ void TournamentCrossover (uint3 id : SV_DispatchThreadID)
 
 #include "utils/MutationUtils.cginc"
 
-// todo: use "max_swaps" to apply on some chromosomes only
-int max_swaps;
-
 // todo: set numthreads.x as chromosome' genes count
-[numthreads(64,1,1)]
-void InnerMutate (uint3 id : SV_DispatchThreadID)
+[numthreads(GROUP_SIZE,1,1)]
+void Mutate (uint3 id : SV_DispatchThreadID)
 {
-    Context context = GetContext(id.x, chromosomes_count, genes_count);
-
-    // todo: use "max_swaps" to determine when to apply swapping
-    uint2 ids = uint2(context._offset, context._offset) + RandomRange2(context.ThreadID, 0, genes_count);
-    uint2 values = uint2(AllValues[ids.x], AllValues[ids.y]);
-
-    AllValues[ids.x] = values.y;
-    AllValues[ids.y] = values.x;
-}
-
-// todo: set numthreads.x as chromosome' genes count
-[numthreads(1024,1,1)]
-void OuterMutate (uint3 id : SV_DispatchThreadID)
-{
-
+    Context context = GetContext(id.x);
+    
+    Mutation_Insert(context);
+    //Mutation_Remove(context);
+    //Mutation_Inner(context);
 }
 
 // Picking stages
 
 // todo: set numthreads.x as chromosome' genes count
-[numthreads(1024,1,1)]
+[numthreads(GROUP_SIZE,1,1)]
 void PickValues (uint3 id : SV_DispatchThreadID)
 {
 
 }
 
 // todo: set numthreads.x as chromosome' genes count
-[numthreads(1024,1,1)]
+[numthreads(GROUP_SIZE,1,1)]
 void PickLookups (uint3 id : SV_DispatchThreadID)
 {
 

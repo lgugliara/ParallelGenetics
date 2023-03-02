@@ -1,3 +1,8 @@
+#ifndef CONTEXT_LIBS
+#define CONTEXT_LIBS
+
+#include "../utils/_VariableUtils.cginc"
+
 struct Context 
 {
     uint ThreadID;
@@ -6,7 +11,7 @@ struct Context
     uint _offset;
 };
 
-Context GetContext(uint ThreadID, uint chromosomes_count, uint genes_count) {
+Context GetContext(uint ThreadID) {
     Context c;
     c.ThreadID = ThreadID;
     c.GeneID = ThreadID % genes_count;
@@ -14,3 +19,5 @@ Context GetContext(uint ThreadID, uint chromosomes_count, uint genes_count) {
     c.ChromosomeID = c._offset / genes_count;
     return c;
 }
+
+#endif

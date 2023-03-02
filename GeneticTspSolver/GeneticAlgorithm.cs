@@ -64,18 +64,20 @@ namespace GeneticTspSolver
             UnityEngine.Debug.LogError("First population created in " + Stopwatch.Elapsed);
         }
 
-        public async void Run()
+        public async Task Run() => _Run();
+
+        private void _Run()
         {
             for (int generation = 0; !ITermination<T>.IsTerminated(this); generation++)
             {
-                await Task.Run(() => RunGen(generation));
+                _RunGen(generation);
                 OnRan?.Invoke(this, EventArgs.Empty);
             }
 
             OnTerminate?.Invoke(this, EventArgs.Empty);
         }
 
-        private void RunGen(int generation)
+        private void _RunGen(int generation)
         {
             if (generation % 1 == 0)
                 UnityEngine.Debug.LogWarning("(GEN) " + generation + "\t\t(BEST FITNESS) " + Population.Best.Fitness.Value);

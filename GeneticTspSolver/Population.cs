@@ -73,10 +73,7 @@ namespace GeneticTspSolver
         public void PerformMutate()
         {
             Stopwatch.Restart();
-            Parallel.ForEach(
-                Chromosomes.AsParallel().Where(c => c.Id != _bestId),
-                Mutation<T>.Mutate
-            );
+            Mutation<T>.Mutate(this);
             UnityEngine.Debug.Log("Mutation done in " + Stopwatch.Elapsed);
         }
 
