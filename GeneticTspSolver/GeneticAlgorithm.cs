@@ -39,7 +39,7 @@ namespace GeneticTspSolver
             Crossover<T>.Initialize(elite_factor);
             Mutation<T>.Initialize(mutation_factor);
             Fitness<T>.Initialize(evaluate, comparer);
-            Picker<T>.Initialize();
+            Picker<T>.Initialize(elite_factor);
 
             var adam_values = values.Take(genes_count);
 
@@ -79,15 +79,18 @@ namespace GeneticTspSolver
 
         private void _RunGen(int generation)
         {
-            if (generation % 1 == 0)
-                UnityEngine.Debug.LogWarning("(GEN) " + generation + "\t\t(BEST FITNESS) " + Population.Best.Fitness.Value);
+            if (Population.PerformEvaluate(OnBestChange))
+                Population.PerformPick();
 
             // TODO
             //Population.PerformCrossover();
             Population.PerformMutate();
 
-            if (Population.PerformEvaluate(OnBestChange))
-                Population.PerformPick();
+            if (generation % 1 == 0)
+                UnityEngine.Debug.LogWarning(
+                    "(GEN) " + generation +
+                    Population.Best.Fitness.ToString()
+                );
         }
     }
 }

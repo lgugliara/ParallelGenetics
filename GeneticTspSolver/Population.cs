@@ -27,8 +27,14 @@ namespace GeneticTspSolver
             get => Chromosomes[_bestId];
             set => _bestId = value.Id;
         }
-
         private int _bestId = 0;
+
+        public Chromosome<T> OldBest
+        {
+            get => Chromosomes[_oldBestId];
+            set => _oldBestId = value.Id;
+        }
+        private int _oldBestId = 0;
 
         public Population(GeneticAlgorithm<T> parent, int id, int chromosomes_count, int genes_count, T[] pool, T[] adam_values)
         {
@@ -83,8 +89,11 @@ namespace GeneticTspSolver
             var hasChanged = Fitness<T>.Evaluate(this);
             UnityEngine.Debug.Log("Evaluation done in " + Stopwatch.Elapsed);
 
-            if(hasChanged)
+            if (hasChanged)
+            {
+                Mutation<T>.Update(this);
                 e?.Invoke(this, EventArgs.Empty);
+            }
 
             return hasChanged;
         }

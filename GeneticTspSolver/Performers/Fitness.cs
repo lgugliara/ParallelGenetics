@@ -8,7 +8,7 @@ namespace GeneticTspSolver
     {
         public double Value { get; private set; } = 0;
 
-        public static double Comparer { get; private set; } = 1;
+        public static double Comparer = 1;
 
         public double Percent => (100 * Value / Comparer);
 
@@ -25,7 +25,10 @@ namespace GeneticTspSolver
 
             var hasChanged = new_best.Fitness.Value > old_best.Fitness.Value;
             if (hasChanged)
+            {
                 population.Best = new_best;
+                population.OldBest = old_best;
+            }
 
             return hasChanged;
         }
@@ -42,9 +45,7 @@ namespace GeneticTspSolver
         public static void Initialize(Func<Chromosome<T>, double> evaluate, double comparer)
         {
             _evaluate = evaluate;
-
-            if (comparer > 0) Comparer = comparer;
-            else throw new ArgumentException("Comparer must be greater than 0");
+            Comparer = comparer;
         }
     }
 }
