@@ -211,11 +211,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a44c1bf25e2bd45c0a07c9fec2db8b75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  file_name: 5
-  best_score: 19913031
-  chromosomes_count: 200
-  genes_count: 10000
-  elite_factor: 0.01
-  mutation_factor: 0.0001
+  fileName: 5
+  bestScore: 19913031
+  chromosomesCount: 100
+  genesCount: 10000
+  eliteFactor: 0.01
   isUnique: 1
   gaCompute: {fileID: 7200000, guid: 51adebc0d68e3454aa7944bbf5a847a2, type: 3}

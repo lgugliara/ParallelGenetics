@@ -1,15 +1,10 @@
+// todo: set based on chromosome' genes count
 #define GROUP_SIZE 64
 
-// Evaluation
-#pragma kernel Evaluate
-// Crossover stages
-#pragma kernel EliteCrossover
-#pragma kernel TournamentCrossover
-// Mutation stages
+#pragma kernel Crossover
 #pragma kernel Mutate
-// Picking stages
-#pragma kernel PickValues
-#pragma kernel PickLookups
+#pragma kernel Evaluate
+#pragma kernel Pick
 
 #include "utils/_BufferUtils.cginc"
 #include "utils/_VariableUtils.cginc"
@@ -18,34 +13,22 @@
 #include "libs/Random.cginc"
 #include "libs/Arrays.cginc"
 
-// Evaluation
-
-// todo: set numthreads.x as chromosome' genes count
-[numthreads(GROUP_SIZE,1,1)]
-void Evaluate (uint3 id : SV_DispatchThreadID)
-{
-
-}
-
-// Crossover stages
-
-// todo: set numthreads.x as chromosome' genes count
-[numthreads(GROUP_SIZE,1,1)]
-void EliteCrossover (uint3 id : SV_DispatchThreadID)
-{
-
-}
-
-// todo: set numthreads.x as chromosome' genes count
-[numthreads(GROUP_SIZE,1,1)]
-void TournamentCrossover (uint3 id : SV_DispatchThreadID)
-{
-
-}
-
-// Mutation stages
-
+#include "utils/CrossoverUtils.cginc"
 #include "utils/MutationUtils.cginc"
+#include "utils/EvaluateUtils.cginc"
+#include "utils/PickerUtils.cginc"
+
+// Operations
+
+// todo: set numthreads.x as chromosome' genes count
+[numthreads(GROUP_SIZE,1,1)]
+void Crossover (uint3 id : SV_DispatchThreadID)
+{
+    Context context = GetContext(id.x);
+
+    //Crossover_Elites(context);
+    //Crossover_Tournament(context);
+}
 
 // todo: set numthreads.x as chromosome' genes count
 [numthreads(GROUP_SIZE,1,1)]
@@ -53,23 +36,25 @@ void Mutate (uint3 id : SV_DispatchThreadID)
 {
     Context context = GetContext(id.x);
     
-    Mutation_Insert(context);
+    //Mutation_Insert(context);
     //Mutation_Remove(context);
     //Mutation_Inner(context);
 }
 
-// Picking stages
-
-// todo: set numthreads.x as chromosome' genes count
 [numthreads(GROUP_SIZE,1,1)]
-void PickValues (uint3 id : SV_DispatchThreadID)
+void Evaluate (uint3 id : SV_DispatchThreadID)
 {
+    Context context = GetContext(id.x);
 
+    //Evaluate_Update(context);
 }
 
 // todo: set numthreads.x as chromosome' genes count
 [numthreads(GROUP_SIZE,1,1)]
-void PickLookups (uint3 id : SV_DispatchThreadID)
+void Pick (uint3 id : SV_DispatchThreadID)
 {
+    Context context = GetContext(id.x);
 
+    //PickValues(context);
+    //PickLookups(context);
 }

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using GeneticTspSolver.CG;
 
 namespace GeneticTspSolver
 {
@@ -15,6 +16,12 @@ namespace GeneticTspSolver
         public event EventHandler OnBestChange;
         public event EventHandler OnTerminate;
 
+        public Crossover<T> Crossover;
+        public Mutation<T> Mutation;
+        public Picker<T> Picker;
+
+        public CGUtils<T> CGUtils;
+
         public Stopwatch Stopwatch { get; set; } = Stopwatch.StartNew();
 
         public GeneticAlgorithm(
@@ -24,7 +31,6 @@ namespace GeneticTspSolver
             Func<Chromosome<T>, double> evaluate,
             double comparer,
             double elite_factor,
-            double mutation_factor,
             bool isUnique,
             ComputeShader gaCompute,
             EventHandler on_ran = null,
@@ -37,7 +43,7 @@ namespace GeneticTspSolver
             genes_count = Math.Min(genes_count, values.Count);
 
             Crossover<T>.Initialize(elite_factor);
-            Mutation<T>.Initialize(mutation_factor);
+            Mutation<T>.Initialize();
             Fitness<T>.Initialize(evaluate, comparer);
             Picker<T>.Initialize(elite_factor);
 
@@ -55,11 +61,25 @@ namespace GeneticTspSolver
                     });
             }
 
-            Population = new Population<T>(this, 0, chromosomes_count, genes_count, values.ToArray(), adam_values.ToArray());
+            Population = new Population<T>(
+                parent: this,
+                id: 0,
+                chromosomes_count: chromosomes_count,
+                genes_count: genes_count,
+                pool: values.ToArray(),
+                adam_values: adam_values.ToArray()
+            );
 
             OnRan = on_ran;
             OnBestChange = on_best_change;
             OnTerminate = on_terminate;
+
+            Crossover = new Crossover<T>();
+            Mutation = new Mutation<T>();
+            Picker = new Picker<T>();
+
+            CGUtils = new CGUtils<T>(gaCompute, this);
+            CGUtils.Compute.Dispatch(CGUtils.Picker_KernelID, CGUtils<T>.GetThreadGroups(Population.Best.GenesCount), 1, 1);
 
             UnityEngine.Debug.LogError("First population created in " + Stopwatch.Elapsed);
         }

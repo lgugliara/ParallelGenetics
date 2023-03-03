@@ -8,35 +8,28 @@ using Palmmedia.ReportGenerator.Core;
 
 namespace GeneticTspSolver
 {
-    public static class Mutation<T>
+    public class Mutation<T>
     {
-        public static double MutationFactor = 1;
-
-        public static double _Increase = 1;
-        public static double _CurrentMutationFactor = 1;
-        private static double _LastMutationFactor = 1;
+        public static int _CurrentMutationsCount = 1;
+        private static int _LastMutationsCount = 1;
 
         public static void Update(Population<T> population)
         {
-            _Increase = population.OldBest.Fitness.Value / population.Best.Fitness.Value;
-            var current_mutation_factor = Math.Min(1, Math.Max(MutationFactor, _Increase));
-            _CurrentMutationFactor = current_mutation_factor;
+            var increase = 1 - population.OldBest.Fitness.Value / population.Best.Fitness.Value;
+            var current_mutations_count = Math.Max(1, ((int)(population.Best.GenesCount * Math.Min(1, increase)) + _LastMutationsCount) / 2);
+
+            _LastMutationsCount = _CurrentMutationsCount;
+            _CurrentMutationsCount = current_mutations_count;
 
             UnityEngine.Debug.LogWarning(
                 "\t(OLD BEST) " + population.OldBest.Fitness.Value +
                 "\t(NEW BEST) " + population.Best.Fitness.Value +
-                "\t(INCREASE) " + _Increase +
-                "\t(MUT FAC) " + _CurrentMutationFactor
+                "\t(INCREASE) " + increase +
+                "\t(CURRENT MUTATIONS) " + _CurrentMutationsCount
             );
-            return;
-
-            var last_mutation_factor = _LastMutationFactor;
-
-            _LastMutationFactor = _CurrentMutationFactor;
-            _CurrentMutationFactor = (current_mutation_factor + last_mutation_factor) / 2;
         }
 
-        public static void Mutate(Population<T> population)
+        public void Mutate(Population<T> population)
         {
             Parallel.ForEach(
                 // todo
@@ -45,7 +38,7 @@ namespace GeneticTspSolver
             );
         }
 
-        public static void Mutate(Chromosome<T> chromosome)
+        public void Mutate(Chromosome<T> chromosome)
         {
             _Mutate_InnerMove(chromosome);
             _Mutate_OuterMove(chromosome);
@@ -57,7 +50,7 @@ namespace GeneticTspSolver
             _Mutate_OuterSwap(chromosome);
         }
 
-        private static void _Mutate_InnerMove(Chromosome<T> chromosome)
+        private void _Mutate_InnerMove(Chromosome<T> chromosome)
         {
             var random = new FastRandoms();
             var old_values = chromosome.Values.ToList();
@@ -71,7 +64,7 @@ namespace GeneticTspSolver
             chromosome.Values = old_values.ToArray();
         }
         // todo
-        private static void _Mutate_OuterMove(Chromosome<T> chromosome)
+        private void _Mutate_OuterMove(Chromosome<T> chromosome)
         {
             if (chromosome.GenesCount >= chromosome.Parent.Pool.Length)
                 return;
@@ -89,36 +82,34 @@ namespace GeneticTspSolver
         }
 
         // todo
-        private static void _Mutate_InnerRemove(Chromosome<T> chromosome)
+        private void _Mutate_InnerRemove(Chromosome<T> chromosome)
         {
 
         }
         // todo
-        private static void _Mutate_OuterRemove(Chromosome<T> chromosome)
+        private void _Mutate_OuterRemove(Chromosome<T> chromosome)
         {
             if (chromosome.GenesCount >= chromosome.Parent.Pool.Length)
                 return;
 
         }
 
-        private static void _Mutate_InnerSwap(Chromosome<T> chromosome)
+        private void _Mutate_InnerSwap(Chromosome<T> chromosome)
         {
             var random = new FastRandoms();
-            //Enumerable.Range(0, (int)(_CurrentMutationFactor * chromosome.GenesCount))
-            Enumerable.Range(0, random.GetInt(0, 10))
+            Enumerable.Range(0, random.GetInt(0, _CurrentMutationsCount))
                 .Select(x => new { from = random.GetInt(0, chromosome.Values.Count), to = random.GetInt(0, chromosome.Values.Count) })
                 .ToList()
                 .ForEach(s => (chromosome.Genes[s.from].Value, chromosome.Genes[s.to].Value) = (chromosome.Genes[s.to].Value, chromosome.Genes[s.from].Value));
         }
         // todo
-        private static void _Mutate_OuterSwap(Chromosome<T> chromosome)
+        private void _Mutate_OuterSwap(Chromosome<T> chromosome)
         {
             if (chromosome.GenesCount >= chromosome.Parent.Pool.Length)
                 return;
 
             var random = new FastRandoms();
-            //random.GetInts((int)(_CurrentMutationFactor * chromosome.GenesCount), 0, chromosome.Parent.Pool.Length)
-            random.GetInts(random.GetInt(0, 10), 0, chromosome.Parent.Pool.Length)
+            random.GetInts(random.GetInt(0, _CurrentMutationsCount), 0, chromosome.Parent.Pool.Length)
                 .Select(x => chromosome.Parent.Pool[x])
                 .Distinct()
                 .Where(v => !chromosome.Lookup.ContainsKey(v))
@@ -127,9 +118,9 @@ namespace GeneticTspSolver
                 .ForEach(s => chromosome.Genes[s.i].Value = s.v);
         }
 
-        public static void Initialize(double mutation_factor)
+        public static void Initialize()
         {
-            MutationFactor = Math.Min(1, Math.Max(0, mutation_factor));
+
         }
     }
 }

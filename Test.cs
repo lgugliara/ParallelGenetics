@@ -14,12 +14,11 @@ using System.Threading.Tasks;
 [InitializeOnLoadAttribute]
 public class Test : MonoBehaviour
 {
-    public string file_name = "5";
-    public int best_score = 19_913_031;
-    public int chromosomes_count = 4;
-    public int genes_count = 16;
-    public double elite_factor = 0.1;
-    public double mutation_factor = 0.01;
+    public string fileName = "5";
+    public int bestScore = 19_913_031;
+    public int chromosomesCount = 4;
+    public int genesCount = 16;
+    public double eliteFactor = 0.1;
     public bool isUnique = true;
 
     public ComputeShader gaCompute;
@@ -74,7 +73,7 @@ public class Test : MonoBehaviour
     void BestChangeEvent(object sender, EventArgs e)
     {
         FileHandler.DrawAdam(
-            @"Assets/ParallelGenetics/ReplyChallenges/2022/Out/" + file_name + ".txt",
+            @"Assets/ParallelGenetics/ReplyChallenges/2022/Out/" + fileName + ".txt",
             (sender as Population<int>).Best
         );
     }
@@ -82,43 +81,43 @@ public class Test : MonoBehaviour
     void TestParallel()
     {
         var KernelId = gaCompute.FindKernel("Mutate");
-        System.Random rnd = new System.Random();
+        System.Random random = new System.Random();
 
         var all_states_bufferId = Shader.PropertyToID("AllStates");
-        uint[] all_states = Enumerable.Range(0, chromosomes_count * genes_count).Select(x => (uint)rnd.Next()).ToArray();
-        var AllStates_Buffer = new ComputeBuffer(chromosomes_count * genes_count, sizeof(uint));
+        uint[] all_states = Enumerable.Range(0, chromosomesCount * genesCount).Select(x => (uint)random.Next()).ToArray();
+        var AllStates_Buffer = new ComputeBuffer(chromosomesCount * genesCount, sizeof(uint));
         AllStates_Buffer.SetData(all_states);
         gaCompute.SetBuffer(KernelId, all_states_bufferId, AllStates_Buffer);
 
         var all_values_bufferId = Shader.PropertyToID("AllValues");
-        uint[] all_values = Enumerable.Range(0, chromosomes_count * genes_count).Select(x => (uint)x).ToArray();
-        var AllValues_Buffer = new ComputeBuffer(chromosomes_count * genes_count, sizeof(uint));
+        uint[] all_values = Enumerable.Range(0, chromosomesCount * genesCount).Select(x => (uint)x).ToArray();
+        var AllValues_Buffer = new ComputeBuffer(chromosomesCount * genesCount, sizeof(uint));
         AllValues_Buffer.SetData(all_values);
         gaCompute.SetBuffer(KernelId, all_values_bufferId, AllValues_Buffer);
 
         UnityEngine.Debug.Log(string.Join(";", all_values));
 
-        gaCompute.SetInt("chromosomes_count", chromosomes_count);
-        gaCompute.SetInt("genes_count", genes_count);
+        gaCompute.SetInt("chromosomes_count", chromosomesCount);
+        gaCompute.SetInt("genes_count", genesCount);
 
         var all_insertions_bufferId = Shader.PropertyToID("Mutation_Insertions");
-        uint2[] all_insertions = Enumerable.Range(0, chromosomes_count).Select(x => new uint2((uint)(x * rnd.Next(0, genes_count)), (uint)rnd.Next(0, genes_count))).ToArray();
-        var AllInsertions_Buffer = new ComputeBuffer(chromosomes_count, sizeof(uint) * 2);
+        uint2[] all_insertions = Enumerable.Range(0, chromosomesCount).Select(x => new uint2((uint)(x * random.Next(0, genesCount)), (uint)random.Next(0, genesCount))).ToArray();
+        var AllInsertions_Buffer = new ComputeBuffer(chromosomesCount, sizeof(uint) * 2);
         AllInsertions_Buffer.SetData(all_insertions);
         gaCompute.SetBuffer(KernelId, all_insertions_bufferId, AllInsertions_Buffer);
 
         var all_remotions_bufferId = Shader.PropertyToID("Mutation_Remotions");
-        uint2[] all_remotions = Enumerable.Range(0, chromosomes_count).Select(x=> new uint2((uint)(x * rnd.Next(0, genes_count)), (uint)rnd.Next(0, genes_count))).ToArray();
-        var AllRemotions_Buffer = new ComputeBuffer(chromosomes_count, sizeof(uint) * 2);
+        uint2[] all_remotions = Enumerable.Range(0, chromosomesCount).Select(x=> new uint2((uint)(x * random.Next(0, genesCount)), (uint)random.Next(0, genesCount))).ToArray();
+        var AllRemotions_Buffer = new ComputeBuffer(chromosomesCount, sizeof(uint) * 2);
         AllRemotions_Buffer.SetData(all_remotions);
         gaCompute.SetBuffer(KernelId, all_remotions_bufferId, AllRemotions_Buffer);
 
-        gaCompute.Dispatch(KernelId, chromosomes_count * genes_count / 64, 1, 1);
+        gaCompute.Dispatch(KernelId, chromosomesCount * genesCount / 64, 1, 1);
 
         AllValues_Buffer.GetData(all_values);
 
-        for (int i = 0; i < chromosomes_count; i++)
-            UnityEngine.Debug.Log(string.Join(";", all_values.Skip(i * genes_count).Take(genes_count)));
+        for (int i = 0; i < chromosomesCount; i++)
+            UnityEngine.Debug.Log(string.Join(";", all_values.Skip(i * genesCount).Take(genesCount)));
 
         //for (int i = 0; i <= all_values.Max(); i++)
         //    UnityEngine.Debug.Log(i + ": " + all_values.Where(x => x == i).Count() + "\t/\t" + all_values.Length);
@@ -152,18 +151,17 @@ public class Test : MonoBehaviour
         //TestParallel();
         //return;
 
-        FileHandler.ImportInputData(@"Assets/ParallelGenetics/ReplyChallenges/2022/In/" + file_name + ".txt");
+        FileHandler.ImportInputData(@"Assets/ParallelGenetics/ReplyChallenges/2022/In/" + fileName + ".txt");
         var values = GameParameter.Demons.Select(x => x.Id).ToList();
         //FileHandler.ImportAdamData(@"Assets/ParallelGenetics/ReplyChallenges/2022/Out/" + file_name + ".txt", adam);
 
         var ga = new GeneticAlgorithm<int>(
-            chromosomes_count: chromosomes_count,
-            genes_count: genes_count,
+            chromosomes_count: chromosomesCount,
+            genes_count: genesCount,
             values: values,
             evaluate: evaluate,
-            comparer: best_score,
-            elite_factor: elite_factor,
-            mutation_factor: mutation_factor,
+            comparer: bestScore,
+            elite_factor: eliteFactor,
             isUnique: isUnique,
             on_best_change: BestChangeEvent,
             gaCompute: gaCompute

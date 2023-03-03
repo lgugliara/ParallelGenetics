@@ -37,7 +37,14 @@ namespace GeneticTspSolver
         }
         private int _oldBestId = 0;
 
-        public Population(GeneticAlgorithm<T> parent, int id, int chromosomes_count, int genes_count, T[] pool, T[] adam_values)
+        public Population(
+            GeneticAlgorithm<T> parent,
+            int id,
+            int chromosomes_count,
+            int genes_count,
+            T[] pool,
+            T[] adam_values
+        )
         {
             Parent = parent;
             Id = id;
@@ -72,7 +79,7 @@ namespace GeneticTspSolver
 
             Parallel.ForEach(
                 this.Chromosomes.Skip(2),
-                c => Crossover<T>.Cross(creators[0], creators[1])
+                c => Parent.Crossover.Cross(creators[0], creators[1])
             );
             // UnityEngine.Debug.Log("Crossover done in " + Stopwatch.Elapsed);
         }
@@ -80,7 +87,7 @@ namespace GeneticTspSolver
         public void PerformMutate()
         {
             Stopwatch.Restart();
-            Mutation<T>.Mutate(this);
+            Parent.Mutation.Mutate(this);
             //UnityEngine.Debug.Log("Mutation done in " + Stopwatch.Elapsed);
         }
 
@@ -102,7 +109,7 @@ namespace GeneticTspSolver
         public void PerformPick()
         {
             this.Stopwatch.Restart();
-            Picker<T>.Pick(this);
+            Parent.Picker.Pick(this);
             //UnityEngine.Debug.Log("Picking done in " + Stopwatch.Elapsed);
         }
     }
