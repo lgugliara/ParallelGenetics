@@ -20,10 +20,11 @@ namespace GeneticTspSolver
         private static void _PickElites(Population<T> population)
         {
             var elites = population.Chromosomes
-                .Where(c => c.Fitness.Value > (EliteTheshold * population.Best.Fitness.Value))
+                //.Where(c => c.Fitness.Value > (EliteTheshold * population.Best.Fitness.Value))
                 .OrderByDescending(c => c.Fitness.Value)
                 .Take((int)Math.Max(1, EliteFactor * population.ChromosomesCount))
                 .ToArray();
+            population.EliteIds = elites.Select(c => c.Id).ToArray();
 
             Parallel.ForEach(
                 population.Chromosomes.Where(c => !elites.Contains(c)),

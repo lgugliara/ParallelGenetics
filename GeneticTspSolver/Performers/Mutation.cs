@@ -40,7 +40,7 @@ namespace GeneticTspSolver
         {
             Parallel.ForEach(
                 // todo
-                population.Chromosomes.Skip(1),
+                population.Chromosomes.Where(c => !population.EliteIds.Contains(c.Id)),
                 Mutate
             );
         }
@@ -104,7 +104,8 @@ namespace GeneticTspSolver
         private static void _Mutate_InnerSwap(Chromosome<T> chromosome)
         {
             var random = new FastRandoms();
-            Enumerable.Range(0, (int)(_CurrentMutationFactor * chromosome.GenesCount))
+            //Enumerable.Range(0, (int)(_CurrentMutationFactor * chromosome.GenesCount))
+            Enumerable.Range(0, random.GetInt(0, 10))
                 .Select(x => new { from = random.GetInt(0, chromosome.Values.Count), to = random.GetInt(0, chromosome.Values.Count) })
                 .ToList()
                 .ForEach(s => (chromosome.Genes[s.from].Value, chromosome.Genes[s.to].Value) = (chromosome.Genes[s.to].Value, chromosome.Genes[s.from].Value));
@@ -116,7 +117,8 @@ namespace GeneticTspSolver
                 return;
 
             var random = new FastRandoms();
-            random.GetInts((int)(_CurrentMutationFactor * chromosome.GenesCount), 0, chromosome.Parent.Pool.Length)
+            //random.GetInts((int)(_CurrentMutationFactor * chromosome.GenesCount), 0, chromosome.Parent.Pool.Length)
+            random.GetInts(random.GetInt(0, 10), 0, chromosome.Parent.Pool.Length)
                 .Select(x => chromosome.Parent.Pool[x])
                 .Distinct()
                 .Where(v => !chromosome.Lookup.ContainsKey(v))

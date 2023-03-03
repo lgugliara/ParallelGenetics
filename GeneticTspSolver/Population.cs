@@ -28,6 +28,7 @@ namespace GeneticTspSolver
             set => _bestId = value.Id;
         }
         private int _bestId = 0;
+        public int[] EliteIds = new int[] {0};
 
         public Chromosome<T> OldBest
         {
@@ -80,14 +81,14 @@ namespace GeneticTspSolver
         {
             Stopwatch.Restart();
             Mutation<T>.Mutate(this);
-            UnityEngine.Debug.Log("Mutation done in " + Stopwatch.Elapsed);
+            //UnityEngine.Debug.Log("Mutation done in " + Stopwatch.Elapsed);
         }
 
         public bool PerformEvaluate(EventHandler e)
         {
             Stopwatch.Restart();
             var hasChanged = Fitness<T>.Evaluate(this);
-            UnityEngine.Debug.Log("Evaluation done in " + Stopwatch.Elapsed);
+            //UnityEngine.Debug.Log("Evaluation done in " + Stopwatch.Elapsed);
 
             if (hasChanged)
             {
@@ -102,7 +103,7 @@ namespace GeneticTspSolver
         {
             this.Stopwatch.Restart();
             Picker<T>.Pick(this);
-            UnityEngine.Debug.Log("Picking done in " + Stopwatch.Elapsed);
+            //UnityEngine.Debug.Log("Picking done in " + Stopwatch.Elapsed);
         }
     }
 }

@@ -79,14 +79,13 @@ namespace GeneticTspSolver
 
         private void _RunGen(int generation)
         {
-            if (Population.PerformEvaluate(OnBestChange))
-                Population.PerformPick();
-
             // TODO
             //Population.PerformCrossover();
             Population.PerformMutate();
+            Population.PerformEvaluate(OnBestChange);
+            Population.PerformPick();
 
-            if (generation % 1 == 0)
+            if (generation % 50 == 0)
                 UnityEngine.Debug.LogWarning(
                     "(GEN) " + generation +
                     Population.Best.Fitness.ToString()
