@@ -55,6 +55,6 @@ void Pick (uint3 id : SV_DispatchThreadID)
 {
     Context context = GetContext(id.x);
 
-    //PickValues(context);
-    //PickLookups(context);
+    PickElites(context);
+    //PickTournament(context);
 }

@@ -19,6 +19,10 @@ namespace GeneticTspSolver
 
         public int GenesCount => Values.Count;
 
+        public bool IsEliteOf(Generation<T> generation) => LastEliteGeneration == null ? false : LastEliteGeneration.Number == generation.Number;
+
+        public Generation<T> LastEliteGeneration = default(Generation<T>);
+
         public static Chromosome<T> Adam { get; set; }
 
         public Chromosome(Population<T> parent, int id, int genes_count)
@@ -33,18 +37,16 @@ namespace GeneticTspSolver
             _TransferTo(this, this);
         }
 
+        public static void UpdateLookup(Chromosome<T> chromosome)
+        {
+            chromosome.Lookup = chromosome.Genes
+                .AsParallel()
+                .Select((g, i) => new { v = chromosome.Values[i], i })
+                .ToDictionary(x => x.v, x => x.i);
+        }
+
         private static void _TransferTo(Chromosome<T> chromosome, Chromosome<T> to)
         {
-            //var keyValues = chromosome.Genes.AsParallel().Select((g, i) =>
-            //{
-            //    to.Values[i] = chromosome.Values[i];
-            //    if (to.Genes[i] == null) to.Genes[i] = new Gene<T>(to, i, to.Values[i]);
-            //    return new { v = to.Values[i], i };
-            //}).ToArray();
-
-            //UnityEngine.Debug.Log(to.Id + " | Length: " + keyValues.Length + "\t\tDistinct values: " + keyValues.Select(x => x.v).Distinct().Count());
-            //UnityEngine.Debug.Log(to.Id + " | To chromosome: " + to.ToString());
-
             to.Lookup = chromosome.Genes.AsParallel().Select((g, i) =>
             {
                 to.Values[i] = chromosome.Values[i];

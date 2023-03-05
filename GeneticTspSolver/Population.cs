@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using Unity.VisualScripting;
+using Debug = UnityEngine.Debug;
+using GeneticTspSolver.Enums;
 
 namespace GeneticTspSolver
 {
@@ -12,13 +14,19 @@ namespace GeneticTspSolver
     {
         public GeneticAlgorithm<T> Parent { get; set; }
         public int Id { get; private set; }
+        public bool IsImproved = false;
 
         public T[] Pool;
         public T[] AllValues;
         public Gene<T>[] AllGenes;
         public Chromosome<T>[] Chromosomes { get; set; }
 
+        public int GenesCount => Best.GenesCount;
         public int ChromosomesCount => Chromosomes.Length;
+
+        public Crossover<T> Crossover;
+        public Mutation<T> Mutation;
+        public Picker<T> Picker;
 
         public Stopwatch Stopwatch { get; set; } = Stopwatch.StartNew();
 
@@ -28,7 +36,6 @@ namespace GeneticTspSolver
             set => _bestId = value.Id;
         }
         private int _bestId = 0;
-        public int[] EliteIds = new int[] {0};
 
         public Chromosome<T> OldBest
         {
@@ -74,43 +81,44 @@ namespace GeneticTspSolver
         // TODO
         public void PerformCrossover()
         {
-            // Stopwatch.Restart();
+            Stopwatch.Restart();
             var creators = this.Chromosomes.OrderByDescending(x => x.Fitness.Value).Take(2).ToList();
-
             Parallel.ForEach(
                 this.Chromosomes.Skip(2),
-                c => Parent.Crossover.Cross(creators[0], creators[1])
+                c => Crossover.Cross(creators[0], creators[1])
             );
-            // UnityEngine.Debug.Log("Crossover done in " + Stopwatch.Elapsed);
+
+            if (Parent.VerbosityLevel == VerbosityLevel.PerformersTiming)
+                Debug.Log("Crossover done in " + Stopwatch.Elapsed);
         }
 
         public void PerformMutate()
         {
             Stopwatch.Restart();
-            Parent.Mutation.Mutate(this);
-            //UnityEngine.Debug.Log("Mutation done in " + Stopwatch.Elapsed);
+            Mutation.Mutate(this);
+
+            if (Parent.VerbosityLevel == VerbosityLevel.PerformersTiming)
+                Debug.Log("Mutation done in " + Stopwatch.Elapsed);
         }
 
-        public bool PerformEvaluate(EventHandler e)
+        public void PerformEvaluate()
         {
             Stopwatch.Restart();
-            var hasChanged = Fitness<T>.Evaluate(this);
-            //UnityEngine.Debug.Log("Evaluation done in " + Stopwatch.Elapsed);
-
-            if (hasChanged)
-            {
+            IsImproved = Fitness<T>.Evaluate(this);
+            if (IsImproved)
                 Mutation<T>.Update(this);
-                e?.Invoke(this, EventArgs.Empty);
-            }
 
-            return hasChanged;
+            if (Parent.VerbosityLevel == VerbosityLevel.PerformersTiming)
+                Debug.Log("Evaluation done in " + Stopwatch.Elapsed);
         }
 
         public void PerformPick()
         {
             this.Stopwatch.Restart();
-            Parent.Picker.Pick(this);
-            //UnityEngine.Debug.Log("Picking done in " + Stopwatch.Elapsed);
+            Picker.Pick();
+
+            if (Parent.VerbosityLevel == VerbosityLevel.PerformersTiming)
+                Debug.Log("Picking done in " + Stopwatch.Elapsed);
         }
     }
 }

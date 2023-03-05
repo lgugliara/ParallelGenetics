@@ -10,6 +10,8 @@ namespace GeneticTspSolver
 {
     public class Mutation<T>
     {
+        public static int CurrentMutationsCount { get => _CurrentMutationsCount; }
+
         public static int _CurrentMutationsCount = 1;
         private static int _LastMutationsCount = 1;
 
@@ -20,22 +22,12 @@ namespace GeneticTspSolver
 
             _LastMutationsCount = _CurrentMutationsCount;
             _CurrentMutationsCount = current_mutations_count;
-
-            UnityEngine.Debug.LogWarning(
-                "\t(OLD BEST) " + population.OldBest.Fitness.Value +
-                "\t(NEW BEST) " + population.Best.Fitness.Value +
-                "\t(INCREASE) " + increase +
-                "\t(CURRENT MUTATIONS) " + _CurrentMutationsCount
-            );
         }
 
         public void Mutate(Population<T> population)
         {
-            Parallel.ForEach(
-                // todo
-                population.Chromosomes.Where(c => !population.EliteIds.Contains(c.Id)),
-                Mutate
-            );
+            var mutate_chromosomes = population.Chromosomes.Where(c => !c.IsEliteOf(population.Parent.Generations.LastOrDefault()));
+            Parallel.ForEach(mutate_chromosomes, Mutate);
         }
 
         public void Mutate(Chromosome<T> chromosome)
@@ -121,6 +113,11 @@ namespace GeneticTspSolver
         public static void Initialize()
         {
 
+        }
+
+        public override string ToString()
+        {
+            return " (CURRENT MUTATIONS) " + CurrentMutationsCount;
         }
     }
 }

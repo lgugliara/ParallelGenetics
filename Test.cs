@@ -1,14 +1,15 @@
 using System;
-using System.Threading;
-using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEditor;
-using GeneticTspSolver;
-using ReplyChallenge2022;
 using Unity.Mathematics;
-using System.Diagnostics;
-using System.Threading.Tasks;
+using GeneticTspSolver;
+using GeneticTspSolver.Enums;
+using ReplyChallenge2022;
 
 // ensure class initializer is called whenever scripts recompile
 [InitializeOnLoadAttribute]
@@ -21,10 +22,13 @@ public class Test : MonoBehaviour
     public double eliteFactor = 0.1;
     public bool isUnique = true;
 
+    public VerbosityLevel verbosityLevel = VerbosityLevel.NewBests;
+
+    public ExecutionEnvironment executionEnvironment = ExecutionEnvironment.Parallel;
     public ComputeShader gaCompute;
 
-    private Thread t;
-
+    // Runtime
+    GeneticAlgorithm<int> GeneticAlgorithm;
     Func<Chromosome<int>, double> evaluate = (Chromosome<int> chromosome) =>
     {
         var currentTurn = 0;
@@ -146,7 +150,7 @@ public class Test : MonoBehaviour
         UnityEngine.Debug.LogWarning("----- (Test ends) -----");
     }
 
-    void Start()
+    private void Start()
     {
         //TestParallel();
         //return;
@@ -155,25 +159,29 @@ public class Test : MonoBehaviour
         var values = GameParameter.Demons.Select(x => x.Id).ToList();
         //FileHandler.ImportAdamData(@"Assets/ParallelGenetics/ReplyChallenges/2022/Out/" + file_name + ".txt", adam);
 
-        var ga = new GeneticAlgorithm<int>(
-            chromosomes_count: chromosomesCount,
-            genes_count: genesCount,
+        GeneticAlgorithm = new GeneticAlgorithm<int>(
+            chromosomesCount: chromosomesCount,
+            genesCount: genesCount,
             values: values,
             evaluate: evaluate,
             comparer: bestScore,
-            elite_factor: eliteFactor,
+            eliteFactor: eliteFactor,
             isUnique: isUnique,
-            on_best_change: BestChangeEvent,
-            gaCompute: gaCompute
+            compute: gaCompute,
+            verbosityLevel: verbosityLevel,
+            executionEnvironment: executionEnvironment,
+            on_best_change: BestChangeEvent
         );
+    }
 
-        t = new Thread(() => ga.Run());
-        t.Start();
+    private void Update()
+    {
+        StartCoroutine(GeneticAlgorithm.Next());
     }
 
     private void OnApplicationQuit()
     {
-        if (t != null)
-            t.Abort();
+        //if (t != null)
+        //    t.Abort();
     }
 }

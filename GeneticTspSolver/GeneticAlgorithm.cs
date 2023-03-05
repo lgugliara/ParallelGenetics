@@ -5,34 +5,38 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using GeneticTspSolver.CG;
+using GeneticTspSolver.Enums;
+using UnityEditor.Sprites;
 
 namespace GeneticTspSolver
 {
     public class GeneticAlgorithm<T>
     {
         public Population<T> Population { get; set; }
+        public List<Generation<T>> Generations = new List<Generation<T>>();
 
         public event EventHandler OnRan;
         public event EventHandler OnBestChange;
         public event EventHandler OnTerminate;
 
-        public Crossover<T> Crossover;
-        public Mutation<T> Mutation;
-        public Picker<T> Picker;
+        public VerbosityLevel VerbosityLevel = Enums.VerbosityLevel.NewBests;
 
         public CGUtils<T> CGUtils;
+        public ExecutionEnvironment ExecutionEnvironment = ExecutionEnvironment.Linear;
 
         public Stopwatch Stopwatch { get; set; } = Stopwatch.StartNew();
 
         public GeneticAlgorithm(
-            int chromosomes_count,
-            int genes_count,
+            int chromosomesCount,
+            int genesCount,
             List<T> values,
             Func<Chromosome<T>, double> evaluate,
             double comparer,
-            double elite_factor,
+            double eliteFactor,
             bool isUnique,
-            ComputeShader gaCompute,
+            VerbosityLevel verbosityLevel = VerbosityLevel.NewBests,
+            ExecutionEnvironment executionEnvironment = ExecutionEnvironment.Linear,
+            ComputeShader compute = null,
             EventHandler on_ran = null,
             EventHandler on_best_change = null,
             EventHandler on_terminate = null
@@ -40,14 +44,14 @@ namespace GeneticTspSolver
             // Benchmark
             Stopwatch.Restart();
 
-            genes_count = Math.Min(genes_count, values.Count);
+            genesCount = Math.Min(genesCount, values.Count);
 
-            Crossover<T>.Initialize(elite_factor);
+            Crossover<T>.Initialize(eliteFactor);
             Mutation<T>.Initialize();
             Fitness<T>.Initialize(evaluate, comparer);
-            Picker<T>.Initialize(elite_factor);
+            Picker<T>.Initialize(eliteFactor);
 
-            var adam_values = values.Take(genes_count);
+            var adam_values = values.Take(genesCount);
 
             if (isUnique)
             {
@@ -61,55 +65,69 @@ namespace GeneticTspSolver
                     });
             }
 
+            ExecutionEnvironment = executionEnvironment;
+            if (ExecutionEnvironment == ExecutionEnvironment.CGParallel && compute)
+                CGUtils = new CGUtils<T>(compute, this);
+
             Population = new Population<T>(
                 parent: this,
                 id: 0,
-                chromosomes_count: chromosomes_count,
-                genes_count: genes_count,
+                chromosomes_count: chromosomesCount,
+                genes_count: genesCount,
                 pool: values.ToArray(),
                 adam_values: adam_values.ToArray()
             );
+
+            if (ExecutionEnvironment == ExecutionEnvironment.CGParallel && compute)
+            {
+                CGUtils.InitVariables();
+                //CGUtils.InitStates();
+            }
+
+            Population.Crossover = new Crossover<T>();
+            Population.Mutation = new Mutation<T>();
+            Population.Picker = new Picker<T>(Population);
+
+            VerbosityLevel = verbosityLevel;
 
             OnRan = on_ran;
             OnBestChange = on_best_change;
             OnTerminate = on_terminate;
 
-            Crossover = new Crossover<T>();
-            Mutation = new Mutation<T>();
-            Picker = new Picker<T>();
-
-            CGUtils = new CGUtils<T>(gaCompute, this);
-            CGUtils.Compute.Dispatch(CGUtils.Picker_KernelID, CGUtils<T>.GetThreadGroups(Population.Best.GenesCount), 1, 1);
-
             UnityEngine.Debug.LogError("First population created in " + Stopwatch.Elapsed);
         }
 
-        public async Task Run() => _Run();
-
-        private void _Run()
+        public void Run()
         {
-            for (int generation = 0; !ITermination<T>.IsTerminated(this); generation++)
-            {
-                _RunGen(generation);
-                OnRan?.Invoke(this, EventArgs.Empty);
-            }
+            while(!ITermination<T>.IsTerminated(this))
+                Next();
 
             OnTerminate?.Invoke(this, EventArgs.Empty);
         }
 
-        private void _RunGen(int generation)
+        public IEnumerator<Generation<T>> Next()
         {
+            var gen = new Generation<T>(Generations.LastOrDefault(), Population);
+            Generations.Add(gen);
+
+            Population.PerformPick();
             // TODO
             //Population.PerformCrossover();
             Population.PerformMutate();
-            Population.PerformEvaluate(OnBestChange);
-            Population.PerformPick();
+            Population.PerformEvaluate();
 
-            if (generation % 50 == 0)
-                UnityEngine.Debug.LogWarning(
-                    "(GEN) " + generation +
-                    Population.Best.Fitness.ToString()
-                );
+            gen.Save();
+
+            if (gen.Number < 5 || gen.Number % 50 == 0 || gen.IsImproved)
+            {
+                UnityEngine.Debug.LogWarning(gen);
+                if(gen.IsImproved)
+                    OnBestChange?.Invoke(Population, EventArgs.Empty);
+            }
+
+            OnRan?.Invoke(this, EventArgs.Empty);
+
+            yield return gen;
         }
     }
 }
