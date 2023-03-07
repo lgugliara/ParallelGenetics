@@ -75,10 +75,7 @@ namespace ParallelGenetics.Abstracts
         public void SetPickers(double eliteFactor)
         {
             foreach (var partition in Partitions)
-            {
-                partition.Picker.Partition = partition;
                 partition.Picker.EliteFactor = eliteFactor;
-            }
         }
 
         public void SetMutators()

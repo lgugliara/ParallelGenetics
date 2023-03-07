@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,7 +17,13 @@ namespace ParallelGenetics.Performers
         private int _MutationsCount = 1;
 
         public void Update(PartitionBase partition) =>
-            _MutationsCount = (Math.Clamp((int)(partition.Population.GenesCount * partition.Increase), 1, partition.Population.GenesCount) + _MutationsCount) / 2;
+            _MutationsCount = (
+                Math.Clamp(
+                    (int)(partition.Population.GenesCount * partition.Increase),
+                    1,
+                    partition.Population.GenesCount
+                ) +
+            _MutationsCount) / 2;
 
         public void Mutate(PartitionBase partition)
         {
@@ -47,7 +54,7 @@ namespace ParallelGenetics.Performers
 
         public void Mutate(ChromosomeBase chromosome)
         {
-            _InnerMove(chromosome);
+            //_InnerMove(chromosome);
             _InnerSwap(chromosome);
             _OuterSwap(chromosome);
         }
@@ -73,11 +80,12 @@ namespace ParallelGenetics.Performers
         {
             var random = new FastRandoms();
             var swaps = Enumerable
-                .Range(0, random.GetInt(0, _MutationsCount))
+                .Range(0, random.GetInt(0, _MutationsCount + 1))
                 .Select(x => new {
                     from = random.GetInt(0, chromosome.Partition.Population.GenesCount),
                     to = random.GetInt(0, chromosome.Partition.Population.GenesCount)
-                });
+                })
+                .ToList();
 
             foreach (var s in swaps)
                 (chromosome.Genes[s.from].ValueId, chromosome.Genes[s.to].ValueId) = (chromosome.Genes[s.to].ValueId, chromosome.Genes[s.from].ValueId);
@@ -90,7 +98,7 @@ namespace ParallelGenetics.Performers
 
             var random = new FastRandoms();
             var swaps = random
-                .GetInts(random.GetInt(0, _MutationsCount), 0, chromosome.Partition.Population.AllValues.Length)
+                .GetInts(random.GetInt(0, _MutationsCount + 1), 0, chromosome.Partition.Population.AllValues.Length)
                 .Distinct()
                 .Where(i => !chromosome.Genes.Select(g => g.ValueId).Contains(i))
                 .Select(v => new {

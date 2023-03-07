@@ -16,10 +16,10 @@ namespace ParallelGenetics.Abstracts
         internal ref PartitionData _Current => ref Population.AllPartitions[Id];
         public ref double Increase => ref _Current.Increase;
 
-        public Picker Picker { get; set; } = new Picker();
-        public Mutator Mutator { get; set; } = new Mutator();
-        public Crossover Crossover { get; set; } = new Crossover();
-        public Evaluator Evaluator { get; set; } = new Evaluator();
+        public Picker Picker = new Picker();
+        public Mutator Mutator = new Mutator();
+        public Crossover Crossover = new Crossover();
+        public Evaluator Evaluator = new Evaluator();
 
         public ChromosomeBase[] Chromosomes { get; set; }
 
@@ -36,10 +36,9 @@ namespace ParallelGenetics.Abstracts
 
             var new_best = GetBest();
 
-            if (new_best.Fitness == 0)
-                Increase = 0;
-            else
-                Increase = Math.Min(0, 1 - old_best.Fitness / new_best.Fitness);
+            Increase = 0;
+            if(new_best.Fitness > 0 && new_best.Fitness > old_best.Fitness)
+                Increase = Math.Max(0, 1 - old_best.Fitness / new_best.Fitness);
 
             Mutator.Update(this);
         }

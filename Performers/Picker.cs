@@ -11,16 +11,14 @@ namespace ParallelGenetics.Performers
 {
     public class Picker
     {
-        public PartitionBase Partition;
-
         public double EliteFactor = 1;
-        private int _ElitesCount => (int)Math.Max(1, EliteFactor * Partition.Population.ChromosomesCount);
+        private int _ElitesCount(PartitionBase partition) => (int)Math.Max(1, EliteFactor * partition.Population.ChromosomesCount);
 
         public void Pick(PartitionBase partition)
         {
             var elites = partition.Chromosomes
                 .OrderByDescending(c => c.Fitness)
-                .Take(_ElitesCount)
+                .Take(_ElitesCount(partition))
                 .ToList();
 
             switch (partition.Population.Genetics.ExecutionEnvironment)
