@@ -33,11 +33,27 @@ namespace ParallelGenetics.Abstracts
                 throw new ArgumentException("Object is not a Chromosome");
         }
 
+        public override string ToString()
+        {
+            return string.Join("; ", Genes.Select(g => g.ValueId.ToString()));
+        }
+
         public static void Copy(ChromosomeBase from, ChromosomeBase to)
         {
             Parallel.ForEach(
                 from.Genes,
                 (g, s, i) => to.Genes[(int)i].ValueId = from.Genes[(int)i].ValueId
+            );
+        }
+
+        public static void Copy(IEnumerable<ChromosomeBase> from, IEnumerable<ChromosomeBase> to, Crossover crossover)
+        {
+            Parallel.ForEach(
+                from,
+                f =>
+                {
+
+                }
             );
         }
     }

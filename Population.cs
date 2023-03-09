@@ -19,21 +19,15 @@ namespace ParallelGenetics
             int chromosomesCount,
             int genesCount,
             T[] allValues
+        ) : base(
+            genetics: genetics,
+            id: id,
+            partitionsCount: partitionsCount,
+            chromosomesCount: chromosomesCount,
+            genesCount: genesCount,
+            allValues: allValues.Select(x => x as object).ToArray()
         )
         {
-            Genetics = genetics;
-            Id = id;
-            Generation = 0;
-
-            PartitionsCount = partitionsCount;
-            ChromosomesCount = chromosomesCount;
-            GenesCount = genesCount;
-
-            AllPartitions = new PartitionData[PartitionsCount];
-            AllChromosomes = new ChromosomeData[PartitionsCount * ChromosomesCount];
-            AllGenes = new GeneData[PartitionsCount * ChromosomesCount * GenesCount];
-            AllValues = allValues.Select(x => x as object).ToArray();
-
             Partitions = Enumerable
                 .Range(0, PartitionsCount)
                 .Select(i => new Partition<T>(this, i))

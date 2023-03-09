@@ -1,0 +1,20 @@
+﻿#define GENE_GROUP_SIZE 1024
+#define CHROMOSOME_GROUP_SIZE 256
+#define PARTITION_GROUP_SIZE 64
+
+#pragma kernel Mutate_InnerSwap
+#pragma kernel Mutate_InnerMove
+#pragma kernel Mutate_OuterSwap
+#pragma kernel Mutate_OuterMove
+
+#include "Utils/Context.cginc"
+#include "Utils/Buffers.cginc"
+
+#include "Structs/PartitionData.cginc"
+#include "Structs/ChromosomeData.cginc"
+#include "Structs/GeneData.cginc"
+
+#include "Performers/Picker.cginc"
+#include "Performers/Mutator.cginc"
+#include "Performers/Crossover.cginc"
+#include "Performers/Picker.cginc"

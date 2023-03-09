@@ -37,8 +37,11 @@ namespace ParallelGenetics.Abstracts
             var new_best = GetBest();
 
             Increase = 0;
-            if(new_best.Fitness > 0 && new_best.Fitness > old_best.Fitness)
+            if (new_best.Fitness > 0 && new_best.Fitness > old_best.Fitness)
+            {
                 Increase = Math.Max(0, 1 - old_best.Fitness / new_best.Fitness);
+                Population.Genetics.Save(new_best);
+            }
 
             Mutator.Update(this);
         }

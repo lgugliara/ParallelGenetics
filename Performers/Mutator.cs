@@ -14,16 +14,16 @@ namespace ParallelGenetics.Performers
 {
     public class Mutator
     {
-        private int _MutationsCount = 1;
+        public int MutationsCount = 1;
 
         public void Update(PartitionBase partition) =>
-            _MutationsCount = (
+            MutationsCount = (
                 Math.Clamp(
                     (int)(partition.Population.GenesCount * partition.Increase),
                     1,
                     partition.Population.GenesCount
                 ) +
-            _MutationsCount) / 2;
+            MutationsCount) / 2;
 
         public void Mutate(PartitionBase partition)
         {
@@ -35,52 +35,67 @@ namespace ParallelGenetics.Performers
                 case ExecutionEnvironment.Parallel:
                     _ParallelMutate(partition);
                     break;
+                case ExecutionEnvironment.CGParallel:
+                    _CGParallelMutate(partition);
+                    break;
+                default:
+                    _ParallelMutate(partition);
+                    break;
             }
         }
 
         private void _LinearMutate(PartitionBase partition)
         {
             foreach (var c in partition.Chromosomes.Where(c => !c.IsEliteOf(partition.Population.Generation)))
-                Mutate(c);
+            {
+                _InnerSwap(c);
+                //_InnerMove(c);
+                _OuterSwap(c);
+                //_OuterMove(c);
+            }
         }
 
         private void _ParallelMutate(PartitionBase partition)
         {
+            //_InnerMove(partition);
+
             Parallel.ForEach(
                 partition.Chromosomes.Where(c => !c.IsEliteOf(partition.Population.Generation)),
-                Mutate
+                c =>
+                {
+                    _InnerSwap(c);
+                    //_InnerMove(c);
+                    _OuterSwap(c);
+                    //_OuterMove(c);
+                }
             );
         }
 
-        public void Mutate(ChromosomeBase chromosome)
+        private void _CGParallelMutate(PartitionBase partition)
         {
-            //_InnerMove(chromosome);
-            _InnerSwap(chromosome);
-            _OuterSwap(chromosome);
-        }
+            var Compute = partition.Population.Genetics.Compute;
 
-        private void _InnerMove(ChromosomeBase chromosome)
-        {
-            // todo: GPU Only
-
-            /* var random = new FastRandoms();
-
-            var old_values = chromosome.Values.ToList();
-
-            var from_index = random.GetInt(0, chromosome.Values.Count);
-            var to_index = random.GetInt(0, chromosome.Values.Count);
-
-            old_values.RemoveAt(from_index);
-            old_values.Insert(to_index, chromosome.Values[from_index]);
-
-            chromosome.Values = old_values.ToArray(); */
+            // Inner swaps
+            int kernelID = Compute.FindKernel("Mutate_InnerSwap");
+            Compute.SetBuffer(kernelID, "RandomStates", partition.Population.CGRandomStates);
+            Compute.SetBuffer(kernelID, "MutationExists", partition.Population.CGMutationExists);
+            Compute.SetBuffer(kernelID, "MutationPool", partition.Population.CGMutationPool);
+            Compute.SetBuffer(kernelID, "Partitions", partition.Population.CGPartitions);
+            Compute.SetBuffer(kernelID, "Chromosomes", partition.Population.CGChromosomes);
+            Compute.SetBuffer(kernelID, "Genes", partition.Population.CGGenes);
+            Compute.SetBuffer(kernelID, "MutationCounts", partition.Population.CGMutationCounts);
+            Compute.Dispatch(
+                kernelID,
+                (int)Math.Ceiling((double)partition.Population.AllGenes.Length / 1024),
+                1, 1
+            );
         }
 
         private void _InnerSwap(ChromosomeBase chromosome)
         {
             var random = new FastRandoms();
-            var swaps = Enumerable
-                .Range(0, random.GetInt(0, _MutationsCount + 1))
+            var swaps = new int[random.GetInt(0, MutationsCount + 1)]
+                .AsParallel()
                 .Select(x => new {
                     from = random.GetInt(0, chromosome.Partition.Population.GenesCount),
                     to = random.GetInt(0, chromosome.Partition.Population.GenesCount)
@@ -90,7 +105,26 @@ namespace ParallelGenetics.Performers
             foreach (var s in swaps)
                 (chromosome.Genes[s.from].ValueId, chromosome.Genes[s.to].ValueId) = (chromosome.Genes[s.to].ValueId, chromosome.Genes[s.from].ValueId);
         }
-        
+
+        private void _InnerMove(PartitionBase partition)
+        {
+            partition.Population.SetCG();
+            var Compute = partition.Population.Genetics.Compute;
+
+            int kernelID = Compute.FindKernel("Mutate_InnerMove");
+            Compute.SetBuffer(kernelID, "RandomStates", partition.Population.CGRandomStates);
+            Compute.SetBuffer(kernelID, "Partitions", partition.Population.CGPartitions);
+            Compute.SetBuffer(kernelID, "Chromosomes", partition.Population.CGChromosomes);
+            Compute.SetBuffer(kernelID, "Genes", partition.Population.CGGenes);
+            Compute.Dispatch(
+                kernelID,
+                (int)Math.Ceiling((double)partition.Population.AllGenes.Length / 1024),
+                1, 1
+            );
+
+            partition.Population.GetCG();
+        }
+
         private void _OuterSwap(ChromosomeBase chromosome)
         {
             if (chromosome.Partition.Population.GenesCount >= chromosome.Partition.Population.AllValues.Length)
@@ -98,21 +132,28 @@ namespace ParallelGenetics.Performers
 
             var random = new FastRandoms();
             var swaps = random
-                .GetInts(random.GetInt(0, _MutationsCount + 1), 0, chromosome.Partition.Population.AllValues.Length)
+                .GetInts(random.GetInt(0, MutationsCount + 1), 0, chromosome.Partition.Population.AllValues.Length)
                 .Distinct()
-                .Where(i => !chromosome.Genes.Select(g => g.ValueId).Contains(i))
+                .AsParallel()
+                .Where(i => !chromosome.Genes.AsParallel().Select(g => g.ValueId).Contains(i))
                 .Select(v => new {
                     v,
                     i = random.GetInt(0, chromosome.Partition.Population.GenesCount)
-                });
+                })
+                .ToList();
 
             foreach (var s in swaps)
                 chromosome.Genes[s.i].ValueId = s.v;
         }
 
+        private void _OuterMove(ChromosomeBase chromosome)
+        {
+            // todo
+        }
+
         public override string ToString()
         {
-            return "(CURRENT MUTATIONS) " + _MutationsCount.ToString();
+            return MutationsCount.ToString();
         }
     }
 }

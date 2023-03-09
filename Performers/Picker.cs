@@ -29,6 +29,9 @@ namespace ParallelGenetics.Performers
                 case ExecutionEnvironment.Parallel:
                     _ParallelPick(partition, elites);
                     break;
+                default:
+                    _ParallelPick(partition, elites);
+                    break;
             }
         }
 

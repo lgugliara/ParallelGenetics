@@ -27,6 +27,8 @@ namespace ParallelGenetics
 
         public List<PopulationBase> Populations = new List<PopulationBase>();
 
+        public ComputeShader Compute;
+
         public Stopwatch Stopwatch { get; set; } = Stopwatch.StartNew();
 
         public Genetics(
@@ -48,6 +50,8 @@ namespace ParallelGenetics
             OnRan = on_ran;
             OnBestChange = on_best_change;
             OnTerminate = on_terminate;
+
+            Compute = compute;
 
             Logger.Log("Genetics created. Elapsed: " + Stopwatch.Elapsed);
         }
@@ -90,6 +94,11 @@ namespace ParallelGenetics
             }
 
             OnTerminate?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void Save(ChromosomeBase chromosome)
+        {
+            OnBestChange?.Invoke(chromosome, EventArgs.Empty);
         }
     }
 }

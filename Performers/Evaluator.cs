@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using ParallelGenetics.Abstracts;
+using ParallelGenetics.Enums;
 using ParallelGenetics.Structs;
 
 namespace ParallelGenetics.Performers
@@ -15,15 +16,32 @@ namespace ParallelGenetics.Performers
 
         public void Evaluate(PartitionBase partition)
         {
-            Parallel.ForEach(
-                partition.Chromosomes,
-                Evaluate
-            );
+            switch (partition.Population.Genetics.ExecutionEnvironment)
+            {
+                case ExecutionEnvironment.Linear:
+                    _LinearEvaluate(partition);
+                    break;
+                case ExecutionEnvironment.Parallel:
+                    _ParallelEvaluate(partition);
+                    break;
+                default:
+                    _ParallelEvaluate(partition);
+                    break;
+            }
         }
 
-        public void Evaluate(ChromosomeBase chromosome)
+        private void _LinearEvaluate(PartitionBase partition)
         {
-            chromosome.Fitness = Controller(chromosome);
+            foreach (var c in partition.Chromosomes)
+                c.Fitness = Controller(c);
+        }
+
+        private void _ParallelEvaluate(PartitionBase partition)
+        {
+            Parallel.ForEach(
+                partition.Chromosomes,
+                c => c.Fitness = Controller(c)
+            );
         }
     }
 }
