@@ -100,5 +100,9 @@ namespace ParallelGenetics
         {
             OnBestChange?.Invoke(chromosome, EventArgs.Empty);
         }
+        public void Stop()
+        {
+            OnTerminate?.Invoke(this, EventArgs.Empty);
+        }
     }
 }
