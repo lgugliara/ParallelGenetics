@@ -34,35 +34,51 @@ namespace ParallelGenetics
                 .ToArray();
         }
 
-        public void LoadAdam(T[] values)
+        public void LoadAdams(IEnumerable<T[]> adams)
         {
             Stopwatch.Restart();
 
-            if (values.Length != GenesCount)
-                throw new ArgumentException("Values must be same amount as Genes count.");
-
-            Parallel.ForEach(
-                Partitions,
-                p =>
+            var valuesList = adams.ToList();
+            for (int i = 0; i < valuesList.Count; i++)
+            {
+                try
                 {
-                    Parallel.For(
-                        0,
-                        values.Length,
-                        i =>
-                        {
-                            int index = Array.IndexOf(AllValues, values[i] as object);
+                    var values = valuesList[i];
+                    if (values.Length != GenesCount)
+                        throw new ArgumentException("Values must be same amount as Genes count.");
 
-                            if (index < 0)
-                                throw new NullReferenceException("Value " + values[i].ToString() + " is invalid.");
-                            p.Chromosomes[0].Genes[i].ValueId = index;
+                    Parallel.ForEach(
+                        Partitions,
+                        p =>
+                        {
+                            Parallel.For(
+                                0,
+                                values.Length,
+                                j =>
+                                {
+                                    int index = Array.IndexOf(AllValues, values[j] as object);
+
+                                    if (index < 0)
+                                        throw new NullReferenceException("Value " + values[j].ToString() + " is invalid.");
+                                    p.Chromosomes[i].Genes[j].ValueId = index;
+                                }
+                            );
+                            Parallel.ForEach(
+                                p.Chromosomes,
+                                c =>
+                                {
+                                    ChromosomeBase.Copy(p.Chromosomes[i], c);
+                                    p.Evaluator.Evaluate(c);
+                                }
+                            );
                         }
                     );
-                    Parallel.ForEach(
-                        p.Chromosomes,
-                        c => ChromosomeBase.Copy(p.Chromosomes[0], c)
-                    );
                 }
-            );
+                catch (Exception e)
+                {
+                    Logger.Log(e.Message);
+                }
+            }
 
             Logger.Log("Adam(s) loaded. Elapsed: " + Stopwatch.Elapsed);
         }
